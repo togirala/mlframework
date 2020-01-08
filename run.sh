@@ -8,4 +8,4 @@ export MODEL=$1
 #FOLD=2 python -m src.train
 #FOLD=3 python -m src.train
 #FOLD=4 python -m src.train
-python -m src.predict
+python3 -m src.predict
