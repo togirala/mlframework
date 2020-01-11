@@ -5,24 +5,43 @@ from sklearn import preprocessing
 from sklearn import metrics
 import joblib
 
-from . import dispatcher
+import dispatcher
 
-TRAINING_DATA = os.environ.get("TRAINING_DATA")
-TEST_DATA = os.environ.get("TEST_DATA")
-FOLD = int(os.environ.get("FOLD"))
-MODEL = os.environ.get("MODEL")
+
+
+TRAINING_DATA = dispatcher.TRAINING_DATA
+TEST_DATA = dispatcher.TEST_DATA
+MODEL = dispatcher.MODEL
+FOLDS = dispatcher.FOLDS
+
+
+# TEST_DATA = os.environ.get("TEST_DATA")
+# FOLD = int(os.environ.get("FOLD"))
+# MODEL = os.environ.get("MODEL")
+
+# FOLD_MAPPPING = {
+#     0: [1, 2, 3, 4],
+#     1: [0, 2, 3, 4],
+#     2: [0, 1, 3, 4],
+#     3: [0, 1, 2, 4],
+#     4: [0, 1, 2, 3]
+# }
+
 
 FOLD_MAPPPING = {
-    0: [1, 2, 3, 4],
-    1: [0, 2, 3, 4],
-    2: [0, 1, 3, 4],
-    3: [0, 1, 2, 4],
-    4: [0, 1, 2, 3]
+    0: [1, 2],
+    1: [0, 2],
+    2: [0, 1]
 }
 
-if __name__ == "__main__":
+
+
+def train(FOLD):
+
     df = pd.read_csv(TRAINING_DATA)
     df_test = pd.read_csv(TEST_DATA)
+    # df_test = df_test.dropna()
+    df_test = df_test.fillna(method='ffill')
     train_df = df[df.kfold.isin(FOLD_MAPPPING.get(FOLD))].reset_index(drop=True)
     valid_df = df[df.kfold==FOLD].reset_index(drop=True)
 
@@ -38,6 +57,7 @@ if __name__ == "__main__":
     for c in train_df.columns:
         lbl = preprocessing.LabelEncoder()
         lbl.fit(train_df[c].values.tolist() + valid_df[c].values.tolist() + df_test[c].values.tolist())
+        
         train_df.loc[:, c] = lbl.transform(train_df[c].values.tolist())
         valid_df.loc[:, c] = lbl.transform(valid_df[c].values.tolist())
         label_encoders[c] = lbl
@@ -51,3 +71,10 @@ if __name__ == "__main__":
     joblib.dump(label_encoders, f"models/{MODEL}_{FOLD}_label_encoder.pkl")
     joblib.dump(clf, f"models/{MODEL}_{FOLD}.pkl")
     joblib.dump(train_df.columns, f"models/{MODEL}_{FOLD}_columns.pkl")
+
+
+
+
+if __name__ == "__main__":
+    for FOLD in FOLDS:
+        train(FOLD)
